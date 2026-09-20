@@ -15,7 +15,7 @@ import java.util.Optional;
 public class LoanServiceImpl implements LoanService {
 
     private final LoanRepository loanRepository;
-    private final FarmersRepository  farmersRepository;
+    private final FarmersRepository farmersRepository;
     private final CreditScoringService creditScoringService;
 
     public LoanServiceImpl(LoanRepository loanRepository, FarmersRepository farmersRepository, CreditScoringService creditScoringService) {
@@ -32,17 +32,14 @@ public class LoanServiceImpl implements LoanService {
         }
 
         Farmer farmer = farmerOptional.get();
-          int creditScore =  creditScoringService.creditScore(farmer);
+        int creditScore = creditScoringService.creditScore(farmer);
 
         Loan loan = new Loan();
         loan.setFarmer(farmer);
         loan.setRequestedAmount(request.getRequestedAmount());
         loan.setPaymentMethod(request.getPaymentMethod());
         loan.setEscrowEnabled(request.isEscrowEnabled());
-        loan.setStatus(LoanStatus.PENDING);
         loan.setCreditScore(creditScore);
-
-      Loan savedLoan =  loanRepository.save(loan);
 
         if (creditScore < 40) {
             loan.setStatus(LoanStatus.REJECTED);
@@ -58,17 +55,17 @@ public class LoanServiceImpl implements LoanService {
             return rejectedResponse;
         }
 
-
+        loan.setStatus(LoanStatus.PENDING);
+        Loan savedLoan = loanRepository.save(loan);
 
         LoanApplicationResponse response = new LoanApplicationResponse();
         response.setLoanId(savedLoan.getId());
         response.setLoanStatus(savedLoan.getStatus());
+        response.setCreditScore(creditScore);
         response.setRequestedAmount(savedLoan.getRequestedAmount());
         response.setMessage("Loan application submitted successfully");
 
         return response;
-
-
     }
 
     @Override
