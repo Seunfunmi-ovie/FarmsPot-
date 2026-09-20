@@ -7,6 +7,7 @@ import ng.farmsPot.data.repositories.FarmersRepository;
 import ng.farmsPot.data.repositories.LoanRepository;
 import ng.farmsPot.dtos.requests.LoanApplicationRequest;
 import ng.farmsPot.dtos.responses.LoanApplicationResponse;
+import ng.farmsPot.utils.LoanMapper;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -35,22 +36,14 @@ public class LoanServiceImpl implements LoanService {
         int creditScore = creditScoringService.creditScore(farmer);
 
         Loan loan = new Loan();
-        loan.setFarmer(farmer);
-        loan.setRequestedAmount(request.getRequestedAmount());
-        loan.setPaymentMethod(request.getPaymentMethod());
-        loan.setEscrowEnabled(request.isEscrowEnabled());
-        loan.setCreditScore(creditScore);
+        LoanMapper.loanMapper(request, loan, farmer, creditScore);
 
         if (creditScore < 40) {
             loan.setStatus(LoanStatus.REJECTED);
             Loan savedRejectedLoan = loanRepository.save(loan);
 
             LoanApplicationResponse rejectedResponse = new LoanApplicationResponse();
-            rejectedResponse.setLoanId(savedRejectedLoan.getId());
-            rejectedResponse.setLoanStatus(savedRejectedLoan.getStatus());
-            rejectedResponse.setCreditScore(creditScore);
-            rejectedResponse.setRequestedAmount(savedRejectedLoan.getRequestedAmount());
-            rejectedResponse.setMessage("Loan application rejected: credit score too low");
+            LoanMapper.rejectedResponseMapper (rejectedResponse, savedRejectedLoan, creditScore);
 
             return rejectedResponse;
         }
@@ -59,14 +52,13 @@ public class LoanServiceImpl implements LoanService {
         Loan savedLoan = loanRepository.save(loan);
 
         LoanApplicationResponse response = new LoanApplicationResponse();
-        response.setLoanId(savedLoan.getId());
-        response.setLoanStatus(savedLoan.getStatus());
-        response.setCreditScore(creditScore);
-        response.setRequestedAmount(savedLoan.getRequestedAmount());
-        response.setMessage("Loan application submitted successfully");
+        LoanMapper.loanApplicationMapper(response, savedLoan, creditScore);
 
         return response;
     }
+
+
+
 
     @Override
     public LoanApplicationResponse disburseLoan(int loanId) {

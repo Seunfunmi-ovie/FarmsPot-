@@ -9,6 +9,7 @@ import ng.farmsPot.dtos.responses.LoginFarmerResponses;
 import ng.farmsPot.dtos.responses.LogoutFarmerResponse;
 import ng.farmsPot.dtos.responses.RegisterFarmerResponses;
 
+import ng.farmsPot.utils.RegistrationMapper;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -34,14 +35,8 @@ public class FarmerRegistrationServiceImpl implements FarmerRegistrationServices
             throw new IllegalArgumentException("Phone number already in use");
         }
         Farmer farmer = new Farmer();
-        farmer.setFullName(registerFarmerRequest.getFullName());
-        farmer.setUserName(registerFarmerRequest.getUserName());
-        farmer.setPassword(passwordEncoder.encode(registerFarmerRequest.getPassword()));
-        farmer.setPhoneNumber(registerFarmerRequest.getPhoneNumber());
-        farmer.setEmail(registerFarmerRequest.getEmail());
-        farmer.setFarmLocation(registerFarmerRequest.getFarmLocation());
-        farmer.setFarmSizeHectares(registerFarmerRequest.getFarmSizeHectares());
-        farmer.setHistoricAverageYieldKg(registerFarmerRequest.getHistoricAverageYieldKg());
+        String encodedPassword = passwordEncoder.encode(registerFarmerRequest.getPassword());
+        RegistrationMapper.registrationMapper(registerFarmerRequest, farmer,encodedPassword);
 
         farmersRepository.save(farmer);
         emailService.registrationConfirmationEmail(farmer.getEmail(), farmer.getFullName());
@@ -55,6 +50,7 @@ public class FarmerRegistrationServiceImpl implements FarmerRegistrationServices
         return  responses;
 
     }
+
 
     @Override
     public LoginFarmerResponses loginFarmer(LoginFarmerRequest request) {
