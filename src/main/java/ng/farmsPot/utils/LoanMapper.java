@@ -7,7 +7,7 @@ import ng.farmsPot.dtos.responses.LoanApplicationResponse;
 
 public class LoanMapper {
 
-    public static void loanMapper(LoanApplicationRequest request, Loan loan, Farmer farmer, int creditScore) {
+    public static void loanMapper(LoanApplicationRequest request, Loan loan, Farmer farmer, Integer creditScore) {
         loan.setFarmer(farmer);
         loan.setRequestedAmount(request.getRequestedAmount());
         loan.setPaymentMethod(request.getPaymentMethod());
@@ -15,7 +15,7 @@ public class LoanMapper {
         loan.setCreditScore(creditScore);
     }
 
-    public static void rejectedResponseMapper(LoanApplicationResponse rejectedResponse, Loan savedRejectedLoan, int creditScore) {
+    public static void rejectedResponseMapper(LoanApplicationResponse rejectedResponse, Loan savedRejectedLoan, Integer creditScore) {
         rejectedResponse.setLoanId(savedRejectedLoan.getId());
         rejectedResponse.setLoanStatus(savedRejectedLoan.getStatus());
         rejectedResponse.setCreditScore(creditScore);
@@ -23,11 +23,35 @@ public class LoanMapper {
         rejectedResponse.setMessage("Loan application rejected: credit score too low");
     }
 
-    public static void loanApplicationMapper(LoanApplicationResponse response, Loan savedLoan, int creditScore) {
+    public static void loanApplicationMapper(LoanApplicationResponse response, Loan savedLoan, Integer creditScore) {
         response.setLoanId(savedLoan.getId());
         response.setLoanStatus(savedLoan.getStatus());
         response.setCreditScore(creditScore);
         response.setRequestedAmount(savedLoan.getRequestedAmount());
         response.setMessage("Loan application submitted successfully");
+    }
+
+    public static void disqualifiedResponseMapper(LoanApplicationResponse response, Loan savedLoan) {
+        response.setLoanId(savedLoan.getId());
+        response.setLoanStatus(savedLoan.getStatus());
+        response.setCreditScore(null);
+        response.setRequestedAmount(savedLoan.getRequestedAmount());
+        response.setMessage("Loan application rejected: recent loan default");
+    }
+
+    public static void exceededAmountMapper(LoanApplicationResponse response, Loan savedLoan, Integer creditScore) {
+        response.setLoanId(savedLoan.getId());
+        response.setLoanStatus(savedLoan.getStatus());
+        response.setCreditScore(creditScore);
+        response.setRequestedAmount(savedLoan.getRequestedAmount());
+        response.setMessage("Loan application rejected: Amount requested is above Loan Limit");
+    }
+
+    public static void disbursedLoanMapper(LoanApplicationResponse response, Loan savedLoan, Integer creditScore) {
+        response.setLoanId(savedLoan.getId());
+        response.setLoanStatus(savedLoan.getStatus());
+        response.setCreditScore(creditScore);
+        response.setRequestedAmount(savedLoan.getRequestedAmount());
+        response.setMessage("Loan disbursed successfully");
     }
 }

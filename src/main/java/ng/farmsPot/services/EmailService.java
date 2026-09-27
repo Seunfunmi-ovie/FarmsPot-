@@ -35,4 +35,20 @@ public class EmailService {
 
     }
 
+    public void loanDueWarningEmail(String email, String farmersName)  {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper mailMessage = new MimeMessageHelper(message, "utf-8");
+            mailMessage.setTo(email);
+            mailMessage.setSubject("FarmPot Loan Warning Message");
+            mailMessage.setText("<h3>Dear Esteemed " + farmersName + "This is to inform you that your Loan has expired today, Kindly repay your loan to avoid default loan repayment</h3>", true);
+
+            mailSender.send(mailMessage.getMimeMessage());
+
+        }catch(MessagingException exception){
+            throw new RuntimeException("Error Sending Mail");
+        }
+
+    }
+
 }

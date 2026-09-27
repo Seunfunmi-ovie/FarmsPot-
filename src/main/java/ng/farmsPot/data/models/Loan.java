@@ -3,6 +3,8 @@ package ng.farmsPot.data.models;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "loans")
 @Data
@@ -30,4 +32,6 @@ public class Loan {
     private PaymentMethod paymentMethod;
 
     private boolean escrowEnabled;
+
+    private LocalDateTime disbursementDate;
 }

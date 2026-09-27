@@ -5,6 +5,7 @@ import ng.farmsPot.data.models.Loan;
 import ng.farmsPot.data.models.LoanStatus;
 import ng.farmsPot.data.repositories.LoanRepository;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 
@@ -15,11 +16,11 @@ import java.util.List;
 public class CreditScoringService {
 
     private final LoanRepository loanRepository;
-    private final Logger logger;
+    private static final Logger logger = LoggerFactory.getLogger(CreditScoringService.class);
 
-    public CreditScoringService(LoanRepository loanRepository, Logger logger) {
+    public CreditScoringService(LoanRepository loanRepository) {
         this.loanRepository = loanRepository;
-        this.logger = logger;
+
     }
 
     public int creditScore(Farmer farmer) {
@@ -40,7 +41,7 @@ public class CreditScoringService {
         if (farmSizeScore > 20) {
             farmSizeScore = 20;
         }
-        List<Loan> pastLoans = loanRepository.findByFarmerId(farmer.getId());
+        List<Loan> pastLoans = loanRepository.findByFarmerIdOrderByIdAsc(farmer.getId());
 
         int repaymentScore = 20;
 
