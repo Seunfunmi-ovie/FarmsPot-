@@ -1,19 +1,22 @@
 package ng.farmsPot.services;
 
 import ng.farmsPot.data.models.Farmer;
+import ng.farmsPot.data.models.FarmersAccount;
 import ng.farmsPot.data.models.Loan;
 import ng.farmsPot.data.models.LoanStatus;
+import ng.farmsPot.data.repositories.FarmersAccountRepository;
 import ng.farmsPot.data.repositories.FarmersRepository;
 import ng.farmsPot.data.repositories.LoanRepository;
 import ng.farmsPot.dtos.requests.LoanApplicationRequest;
 import ng.farmsPot.dtos.responses.LoanApplicationResponse;
 import ng.farmsPot.utils.LoanMapper;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
+
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.transaction.annotation.Transactional;
+
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -28,13 +31,14 @@ public class LoanServiceImpl implements LoanService {
     private final CreditScoringService creditScoringService;
     private static final Logger logger = LoggerFactory.getLogger(LoanServiceImpl.class);
     private final EmailService emailService;
+    private final FarmersAccountRepository farmersAccountRepository;
 
-    public LoanServiceImpl(LoanRepository loanRepository, FarmersRepository farmersRepository, CreditScoringService creditScoringService, EmailService emailService) {
+    public LoanServiceImpl(LoanRepository loanRepository, FarmersRepository farmersRepository, CreditScoringService creditScoringService, EmailService emailService, FarmersAccountRepository farmersAccountRepository) {
         this.loanRepository = loanRepository;
         this.farmersRepository = farmersRepository;
         this.creditScoringService = creditScoringService;
-
         this.emailService = emailService;
+        this.farmersAccountRepository = farmersAccountRepository;
     }
 
     @Override
@@ -115,7 +119,7 @@ public class LoanServiceImpl implements LoanService {
 
 
 
-
+    @Transactional
     @Override
     public LoanApplicationResponse disburseLoan(int loanId) {
     Optional<Loan> loanOptional = loanRepository.findById(loanId);
@@ -128,19 +132,77 @@ public class LoanServiceImpl implements LoanService {
             throw new IllegalStateException("Loan is not in a pending state and cannot be disbursed. Current status: " + loan.getStatus());
 
         }
+        Optional<FarmersAccount> accountOptional = farmersAccountRepository.findByFarmerId(loan.getFarmer().getId());
+        if(accountOptional.isEmpty()){
+            throw new IllegalStateException("No FarmersAccount found with id " + loan.getFarmer().getId());
+        }
         loan.setStatus(LoanStatus.APPROVED);
         loan.setDisbursementDate(LocalDateTime.now());
         Loan approvedLoan = loanRepository.save(loan);
 
+        FarmersAccount farmersAccount = accountOptional.get();
+        farmersAccount.setBalance(farmersAccount.getBalance() + approvedLoan.getRequestedAmount());
+        farmersAccountRepository.save(farmersAccount);
         LoanApplicationResponse response = new LoanApplicationResponse();
         LoanMapper.disbursedLoanMapper(response,approvedLoan, approvedLoan.getCreditScore());
 
         return response;
     }
-
+    @Transactional
     @Override
     public LoanApplicationResponse recordEscrowPayment(int loanId, double amount) {
-        return null;
+
+        Optional<Loan> loanOptional = loanRepository.findById(loanId);
+        if (loanOptional.isEmpty()) {
+            throw new IllegalArgumentException("No Loan found with id " + loanId);
+        }
+        Loan loan = loanOptional.get();
+
+        if (loan.getStatus() == LoanStatus.PENDING || loan.getStatus() == LoanStatus.REJECTED || loan.getStatus() == LoanStatus.FULLY_REPAID) {
+            throw new IllegalStateException("Loan cannot receive a payment while in " + loan.getStatus() + " status");
+        }
+
+        Optional<FarmersAccount> accountOptional = farmersAccountRepository.findByFarmerId(loan.getFarmer().getId());
+
+
+            if(accountOptional.isEmpty()){
+                throw new IllegalStateException("No FarmersAccount found with id " + loan.getFarmer().getId());
+            }
+
+        FarmersAccount farmersAccount = accountOptional.get();
+            if(farmersAccount.getBalance() < amount){
+                throw new IllegalStateException("Insufficient account balance");
+            }
+
+
+            double amountOwned = loan.getRequestedAmount() - loan.getAmountRepaidViaEscrow();
+            double appliedAmount;
+            if(amountOwned < amount){
+                appliedAmount = amountOwned;
+            } else {
+                appliedAmount = amount;
+            }
+
+        loan.setAmountRepaidViaEscrow(loan.getAmountRepaidViaEscrow() + appliedAmount);
+
+        if (loan.getAmountRepaidViaEscrow() >= loan.getRequestedAmount()) {
+            loan.setStatus(LoanStatus.FULLY_REPAID);
+        } else if (loan.getStatus() == LoanStatus.APPROVED) {
+            loan.setStatus(LoanStatus.REPAYING);
+        }
+
+        farmersAccount.setBalance(farmersAccount.getBalance() - appliedAmount);
+
+        Loan savedLoan = loanRepository.save(loan);
+
+        FarmersAccount  farmersAccount1 = farmersAccountRepository.save(farmersAccount);
+
+        LoanApplicationResponse response = new LoanApplicationResponse();
+        LoanMapper.escrowPaymentResponseMapper(response, savedLoan, appliedAmount);
+
+
+        return response;
+
     }
 
 

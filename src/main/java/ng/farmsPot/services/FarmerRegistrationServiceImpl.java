@@ -1,6 +1,9 @@
 package ng.farmsPot.services;
 
+
 import ng.farmsPot.data.models.Farmer;
+import ng.farmsPot.data.models.FarmersAccount;
+import ng.farmsPot.data.repositories.FarmersAccountRepository;
 import ng.farmsPot.data.repositories.FarmersRepository;
 import ng.farmsPot.dtos.requests.LoginFarmerRequest;
 import ng.farmsPot.dtos.requests.LogoutFarmersRequest;
@@ -10,8 +13,12 @@ import ng.farmsPot.dtos.responses.LogoutFarmerResponse;
 import ng.farmsPot.dtos.responses.RegisterFarmerResponses;
 
 import ng.farmsPot.utils.RegistrationMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 
 import java.util.Optional;
 
@@ -22,12 +29,15 @@ public class FarmerRegistrationServiceImpl implements FarmerRegistrationServices
    private final FarmersRepository farmersRepository;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private final EmailService emailService;
+    private final FarmersAccountRepository farmersAccountRepository;
+    private static final Logger logger = LoggerFactory.getLogger(FarmerRegistrationServiceImpl.class);
 
-    public FarmerRegistrationServiceImpl(FarmersRepository farmersRepository, EmailService emailService) {
+    public FarmerRegistrationServiceImpl(FarmersRepository farmersRepository, EmailService emailService, FarmersAccountRepository farmersAccountRepository) {
         this.farmersRepository = farmersRepository;
         this.emailService = emailService;
+        this.farmersAccountRepository = farmersAccountRepository;
     }
-
+    @Transactional
     @Override
     public RegisterFarmerResponses registerFarmer(RegisterFarmerRequest registerFarmerRequest) {
         Optional<Farmer> existingFarmer = farmersRepository.findByPhoneNumber(registerFarmerRequest.getPhoneNumber());
@@ -35,11 +45,18 @@ public class FarmerRegistrationServiceImpl implements FarmerRegistrationServices
             throw new IllegalArgumentException("Phone number already in use");
         }
         Farmer farmer = new Farmer();
+        FarmersAccount farmersAccount = new FarmersAccount();
         String encodedPassword = passwordEncoder.encode(registerFarmerRequest.getPassword());
         RegistrationMapper.registrationMapper(registerFarmerRequest, farmer,encodedPassword);
 
-        farmersRepository.save(farmer);
-        emailService.registrationConfirmationEmail(farmer.getEmail(), farmer.getFullName());
+        Farmer farmer1 = farmersRepository.save(farmer);
+        farmersAccount.setFarmer(farmer1);
+        farmersAccountRepository.save(farmersAccount);
+        try {
+            emailService.registrationConfirmationEmail(farmer.getEmail(), farmer.getFullName());
+        } catch (Exception exception) {
+            logger.warn("Failed to send registration confirmation email to " + farmer.getEmail());
+        }
 
 
         RegisterFarmerResponses responses = new RegisterFarmerResponses();

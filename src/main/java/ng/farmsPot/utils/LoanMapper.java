@@ -54,4 +54,11 @@ public class LoanMapper {
         response.setRequestedAmount(savedLoan.getRequestedAmount());
         response.setMessage("Loan disbursed successfully");
     }
+
+    public static void escrowPaymentResponseMapper(LoanApplicationResponse response, Loan savedLoan, double appliedAmount) {
+        response.setLoanId(savedLoan.getId());
+        response.setLoanStatus(savedLoan.getStatus());
+        response.setRequestedAmount(savedLoan.getRequestedAmount());
+        response.setMessage("Payment of loan" + appliedAmount + " has been recorded against loan");
+    }
 }
