@@ -1,84 +1,81 @@
 package ng.farmsPot.services;
 
-
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
-
-import lombok.AllArgsConstructor;
-import org.springframework.mail.javamail.JavaMailSender;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.mail.javamail.MimeMessageHelper;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 @Service
-@AllArgsConstructor
 public class EmailService {
 
-    private  final JavaMailSender mailSender;
+    @Value("${resend.api-key}")
+    private String apiKey;
 
+    @Value("${resend.from}")
+    private String fromEmail;
 
+    private final HttpClient httpClient = HttpClient.newHttpClient();
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public void registrationConfirmationEmail(String email, String farmersName)  {
-
+    private void sendEmail(String email, String subject, String html) {
         try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper mailMessage =  new MimeMessageHelper(message, "utf-8");
-            mailMessage.setTo(email);
-            mailMessage.setSubject("FarmsPot Registration Confirmation Message");
-            mailMessage.setText("<h3>Welcome to farmsPot-Farmers Loan-Cooperative</h3><p>Can't wait to serve you better </p>" + farmersName, true);
+            Map<String, Object> body = Map.of(
+                    "from", fromEmail != null ? fromEmail : "onboarding@resend.dev",
+                    "to", new String[]{email},
+                    "subject", subject,
+                    "html", html
+            );
 
-            mailSender.send(mailMessage.getMimeMessage());
+            String json = objectMapper.writeValueAsString(body);
 
-        }catch(MessagingException exception){
-            throw new RuntimeException("Error Sending Mail");
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create("https://api.resend.com/emails"))
+                    .header("Authorization", "Bearer " + apiKey)
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(json, StandardCharsets.UTF_8))
+                    .build();
+
+            HttpResponse<String> response = httpClient.send(
+                    request,
+                    HttpResponse.BodyHandlers.ofString()
+            );
+
+            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+                throw new RuntimeException("Error Sending Mail. Response: " + response.body());
+            }
+
+        } catch (Exception exception) {
+            throw new RuntimeException("Error Sending Mail", exception);
         }
-
     }
 
-    public void loanDueWarningEmail(String email, String farmersName)  {
-        try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper mailMessage = new MimeMessageHelper(message, "utf-8");
-            mailMessage.setTo(email);
-            mailMessage.setSubject("FarmPot Loan Warning Message");
-            mailMessage.setText("<h3>Dear Esteemed " + farmersName + "This is to inform you that your Loan has expired today, Kindly repay your loan to avoid default loan repayment</h3>", true);
+    public void registrationConfirmationEmail(String email, String farmersName) {
+        String subject = "FarmsPot Registration Confirmation Message";
+        String html = "<h3>Welcome to farmsPot-Farmers Loan-Cooperative</h3><p>Can't wait to serve you better </p>" + farmersName;
+        sendEmail(email, subject, html);
+    }
 
-            mailSender.send(mailMessage.getMimeMessage());
-
-        }catch(MessagingException exception){
-            throw new RuntimeException("Error Sending Mail");
-        }
-
+    public void loanDueWarningEmail(String email, String farmersName) {
+        String subject = "FarmPot Loan Warning Message";
+        String html = "<h3>Dear Esteemed " + farmersName + "This is to inform you that your Loan has expired today, Kindly repay your loan to avoid default loan repayment</h3>";
+        sendEmail(email, subject, html);
     }
 
     public void loanApplicationReceivedEmail(String email, String farmersName, double requestedAmount) {
-        try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper mailMessage = new MimeMessageHelper(message, "utf-8");
-            mailMessage.setTo(email);
-            mailMessage.setSubject("FarmsPot Loan Application Received");
-            mailMessage.setText("<h3>Dear " + farmersName + ", your loan application for " + requestedAmount + " has been received and is pending review.</h3>", true);
-
-            mailSender.send(mailMessage.getMimeMessage());
-
-        } catch (MessagingException exception) {
-            throw new RuntimeException("Error Sending Mail");
-        }
+        String subject = "FarmsPot Loan Application Received";
+        String html = "<h3>Dear " + farmersName + ", your loan application for " + requestedAmount + " has been received and is pending review.</h3>";
+        sendEmail(email, subject, html);
     }
 
     public void loanDisbursedEmail(String email, String farmersName, double requestedAmount) {
-        try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper mailMessage = new MimeMessageHelper(message, "utf-8");
-            mailMessage.setTo(email);
-            mailMessage.setSubject("FarmsPot Loan Approved and Disbursed");
-            mailMessage.setText("<h3>Dear " + farmersName + ", your loan of " + requestedAmount + " has been approved and disbursed to your account.</h3>", true);
-
-            mailSender.send(mailMessage.getMimeMessage());
-
-        } catch (MessagingException exception) {
-            throw new RuntimeException("Error Sending Mail");
-        }
+        String subject = "FarmsPot Loan Approved and Disbursed";
+        String html = "<h3>Dear " + farmersName + ", your loan of " + requestedAmount + " has been approved and disbursed to your account.</h3>";
+        sendEmail(email, subject, html);
     }
-
 }
