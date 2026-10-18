@@ -14,10 +14,10 @@ import java.util.Map;
 @Service
 public class EmailService {
 
-    @Value("${resend.api-key}")
+    @Value("${resend.api-key:re_placeholder_key}")
     private String apiKey;
 
-    @Value("${resend.from}")
+    @Value("${resend.from:FarmsPot <onboarding@resend.dev>}")
     private String fromEmail;
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
