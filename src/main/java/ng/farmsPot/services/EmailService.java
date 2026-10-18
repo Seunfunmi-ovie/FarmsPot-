@@ -51,4 +51,34 @@ public class EmailService {
 
     }
 
+    public void loanApplicationReceivedEmail(String email, String farmersName, double requestedAmount) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper mailMessage = new MimeMessageHelper(message, "utf-8");
+            mailMessage.setTo(email);
+            mailMessage.setSubject("FarmsPot Loan Application Received");
+            mailMessage.setText("<h3>Dear " + farmersName + ", your loan application for " + requestedAmount + " has been received and is pending review.</h3>", true);
+
+            mailSender.send(mailMessage.getMimeMessage());
+
+        } catch (MessagingException exception) {
+            throw new RuntimeException("Error Sending Mail");
+        }
+    }
+
+    public void loanDisbursedEmail(String email, String farmersName, double requestedAmount) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper mailMessage = new MimeMessageHelper(message, "utf-8");
+            mailMessage.setTo(email);
+            mailMessage.setSubject("FarmsPot Loan Approved and Disbursed");
+            mailMessage.setText("<h3>Dear " + farmersName + ", your loan of " + requestedAmount + " has been approved and disbursed to your account.</h3>", true);
+
+            mailSender.send(mailMessage.getMimeMessage());
+
+        } catch (MessagingException exception) {
+            throw new RuntimeException("Error Sending Mail");
+        }
+    }
+
 }

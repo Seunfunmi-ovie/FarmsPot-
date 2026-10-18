@@ -6,5 +6,6 @@ import lombok.Data;
 public class LoginFarmerResponses {
     private String userName;
     private String message;
+    private int farmerId;
 
 }

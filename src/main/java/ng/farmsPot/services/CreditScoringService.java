@@ -27,14 +27,12 @@ public class CreditScoringService {
 
         logger.info("CreditScoringService start");
         double yieldRatio = farmer.getHistoricAverageYieldKg() / 5000.0;
- logger.info(" i'm using (int) as a type cast since it will be in double so im trying to cast it back to int.");
+
         int yieldScore = (int) (yieldRatio * 40);
-// in a situation the farmer's score is more that the given rate for land then it should round it down back to 40 for balance.
+
         if (yieldScore > 40) {
             yieldScore = 40;
         }
-
-
         double farmSizeRatio = farmer.getFarmSizeHectares() / 10.0;
         int farmSizeScore = (int) (farmSizeRatio * 20);
 

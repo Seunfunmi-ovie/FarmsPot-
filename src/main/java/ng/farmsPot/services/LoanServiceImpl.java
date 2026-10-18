@@ -110,6 +110,12 @@ public class LoanServiceImpl implements LoanService {
         loan.setStatus(LoanStatus.PENDING);
         Loan savedLoan = loanRepository.save(loan);
 
+        try {
+            emailService.loanApplicationReceivedEmail(farmer.getEmail(), farmer.getFullName(), savedLoan.getRequestedAmount());
+        } catch (Exception exception) {
+            logger.warn("Failed to send loan application received email to " + farmer.getEmail());
+        }
+
         LoanApplicationResponse response = new LoanApplicationResponse();
         LoanMapper.loanApplicationMapper(response, savedLoan, creditScore);
 
@@ -142,6 +148,13 @@ public class LoanServiceImpl implements LoanService {
         FarmersAccount farmersAccount = accountOptional.get();
         farmersAccount.setBalance(farmersAccount.getBalance() + approvedLoan.getRequestedAmount());
         farmersAccountRepository.save(farmersAccount);
+
+        try {
+            emailService.loanDisbursedEmail(approvedLoan.getFarmer().getEmail(), approvedLoan.getFarmer().getFullName(), approvedLoan.getRequestedAmount());
+        } catch (Exception exception) {
+            logger.warn("Failed to send loan disbursed email to " + approvedLoan.getFarmer().getEmail());
+        }
+
         LoanApplicationResponse response = new LoanApplicationResponse();
         LoanMapper.disbursedLoanMapper(response, approvedLoan, approvedLoan.getCreditScore());
 
@@ -241,4 +254,3 @@ public class LoanServiceImpl implements LoanService {
         }
     }
 }
-

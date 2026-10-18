@@ -17,7 +17,7 @@ public class Farmer {
     @NotBlank
     private String fullName;
     private String email;
-    @Column(unique = true)
+   @Column(unique = true)
     private String userName;
     @NotBlank
     private String password;

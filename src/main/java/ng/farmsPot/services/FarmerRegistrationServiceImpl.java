@@ -26,7 +26,7 @@ import java.util.Optional;
 
 @Service
 public class FarmerRegistrationServiceImpl implements FarmerRegistrationServices{
-   private final FarmersRepository farmersRepository;
+    private final FarmersRepository farmersRepository;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private final EmailService emailService;
     private final FarmersAccountRepository farmersAccountRepository;
@@ -44,6 +44,10 @@ public class FarmerRegistrationServiceImpl implements FarmerRegistrationServices
         if (existingFarmer.isPresent()) {
             throw new IllegalArgumentException("Phone number already in use");
         }
+        Optional<Farmer> existingFarmer1 = farmersRepository.findByUserName(registerFarmerRequest.getUserName());
+        if (existingFarmer1.isPresent()) {
+            throw new IllegalArgumentException("Username already in use");
+        }
         Farmer farmer = new Farmer();
         FarmersAccount farmersAccount = new FarmersAccount();
         String encodedPassword = passwordEncoder.encode(registerFarmerRequest.getPassword());
@@ -55,13 +59,14 @@ public class FarmerRegistrationServiceImpl implements FarmerRegistrationServices
         try {
             emailService.registrationConfirmationEmail(farmer.getEmail(), farmer.getFullName());
         } catch (Exception exception) {
-            logger.warn("Failed to send registration confirmation email to " + farmer.getEmail());
+            logger.warn("Failed to send registration confirmation email to {}", farmer.getEmail(), exception);
         }
 
 
         RegisterFarmerResponses responses = new RegisterFarmerResponses();
         responses.setFullName(registerFarmerRequest.getFullName());
         responses.setMessage("Registration Successful...");
+
 
 
         return  responses;
@@ -83,6 +88,7 @@ public class FarmerRegistrationServiceImpl implements FarmerRegistrationServices
         LoginFarmerResponses responses = new LoginFarmerResponses();
         responses.setUserName(request.getUserName());
         responses.setMessage("Login Successful...");
+        responses.setFarmerId(farmer.getId());
 
 
         return  responses;
