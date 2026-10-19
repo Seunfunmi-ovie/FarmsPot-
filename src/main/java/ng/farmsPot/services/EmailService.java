@@ -1,55 +1,40 @@
 package ng.farmsPot.services;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.util.Map;
 
 @Service
 public class EmailService {
 
-    @Value("${resend.api-key:re_placeholder_key}")
-    private String apiKey;
+    private final JavaMailSender mailSender;
 
-    @Value("${resend.from:FarmsPot <onboarding@resend.dev>}")
+    @Value("${mail.from-email:oluwaseunpu@gmail.com}")
     private String fromEmail;
 
-    private final HttpClient httpClient = HttpClient.newHttpClient();
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    @Value("${mail.from-name:FarmsPot}")
+    private String fromName;
+
+    public EmailService(JavaMailSender mailSender) {
+        this.mailSender = mailSender;
+    }
 
     private void sendEmail(String email, String subject, String html) {
         try {
-            Map<String, Object> body = Map.of(
-                    "from", fromEmail != null ? fromEmail : "onboarding@resend.dev",
-                    "to", new String[]{email},
-                    "subject", subject,
-                    "html", html
-            );
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper =
+                    new MimeMessageHelper(message, StandardCharsets.UTF_8.name());
 
-            String json = objectMapper.writeValueAsString(body);
+            helper.setFrom(fromEmail, fromName);
+            helper.setTo(email);
+            helper.setSubject(subject);
+            helper.setText(html, true);
 
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("https://api.resend.com/emails"))
-                    .header("Authorization", "Bearer " + apiKey)
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(json, StandardCharsets.UTF_8))
-                    .build();
-
-            HttpResponse<String> response = httpClient.send(
-                    request,
-                    HttpResponse.BodyHandlers.ofString()
-            );
-
-            if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                throw new RuntimeException("Error Sending Mail. Response: " + response.body());
-            }
-
+            mailSender.send(message);
         } catch (Exception exception) {
             throw new RuntimeException("Error Sending Mail", exception);
         }
