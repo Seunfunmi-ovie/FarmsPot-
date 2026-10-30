@@ -8,10 +8,13 @@ import ng.farmsPot.data.repositories.FarmersRepository;
 import ng.farmsPot.dtos.requests.LoginFarmerRequest;
 import ng.farmsPot.dtos.requests.LogoutFarmersRequest;
 import ng.farmsPot.dtos.requests.RegisterFarmerRequest;
+import ng.farmsPot.dtos.requests.UpdateFarmerProfileRequest;
 import ng.farmsPot.dtos.responses.LoginFarmerResponses;
 import ng.farmsPot.dtos.responses.LogoutFarmerResponse;
 import ng.farmsPot.dtos.responses.RegisterFarmerResponses;
 
+import ng.farmsPot.dtos.responses.UpdateFarmerProfileResponse;
+import ng.farmsPot.utils.ProfileMapper;
 import ng.farmsPot.utils.RegistrationMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,5 +108,24 @@ public class FarmerRegistrationServiceImpl implements FarmerRegistrationServices
         responses.setMessage("Logout Successful...");
 
         return responses;
+    }
+    @Transactional
+    @Override
+    public UpdateFarmerProfileResponse updateProfile(int farmerId, UpdateFarmerProfileRequest request) {
+        Farmer farmer = farmersRepository.findById(farmerId)
+                .orElseThrow(() -> new IllegalArgumentException("No Farmer found with id " + farmerId));
+
+        String newPhone = request.getPhoneNumber();
+        if (newPhone != null && !newPhone.isBlank() && !newPhone.trim().equals(farmer.getPhoneNumber())) {
+            Optional<Farmer> owner = farmersRepository.findByPhoneNumber(newPhone.trim());
+            if (owner.isPresent() && owner.get().getId() != farmerId) {
+                throw new IllegalArgumentException("Phone number already in use");
+            }
+        }
+
+        ProfileMapper.applyUpdate(request, farmer);
+        Farmer saved = farmersRepository.save(farmer);
+
+        return ProfileMapper.toResponse(saved, "Profile updated successfully...");
     }
 }
