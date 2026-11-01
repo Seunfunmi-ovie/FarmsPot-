@@ -49,6 +49,9 @@ public class LoanServiceImpl implements LoanService {
         }
 
         Farmer farmer = farmerOptional.get();
+        if (Boolean.TRUE.equals(farmer.getSuspended())) {
+            throw new IllegalStateException("Your account is suspended. Please contact FarmsPot support.");
+        }
         List<Loan> farmersLoan = loanRepository.findByFarmerIdOrderByIdAsc(request.getFarmerId());
 
         logger.info("The logic here is that at start point every farmer start at -1 if the have never defaulted a loan before then move to 0 at the point if default, then the counter count the number of times they fully paid after the defaulted period after 2 times then they csn acqure another loan ");

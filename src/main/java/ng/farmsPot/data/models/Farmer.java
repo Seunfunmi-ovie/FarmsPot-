@@ -17,7 +17,7 @@ public class Farmer {
     @NotBlank
     private String fullName;
     private String email;
-   @Column(unique = true)
+    @Column(unique = true)
     private String userName;
     @NotBlank
     private String password;
@@ -28,4 +28,10 @@ public class Farmer {
     private double farmSizeHectares;
     private double historicAverageYieldKg;
     private LocalDateTime createdAt =  LocalDateTime.now();
+
+    // Existing rows have no value here yet, so null is treated as FARMER / not suspended everywhere.
+    @Enumerated(EnumType.STRING)
+    private Role role = Role.FARMER;
+
+    private Boolean suspended = false;
 }

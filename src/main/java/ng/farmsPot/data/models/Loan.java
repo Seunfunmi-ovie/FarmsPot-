@@ -34,4 +34,7 @@ public class Loan {
     private boolean escrowEnabled;
 
     private LocalDateTime disbursementDate;
+
+    // Reason recorded when an admin rejects a loan or overrides a rejection.
+    private String reviewNote;
 }

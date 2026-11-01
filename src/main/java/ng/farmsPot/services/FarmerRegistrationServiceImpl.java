@@ -3,6 +3,7 @@ package ng.farmsPot.services;
 
 import ng.farmsPot.data.models.Farmer;
 import ng.farmsPot.data.models.FarmersAccount;
+import ng.farmsPot.data.models.Role;
 import ng.farmsPot.data.repositories.FarmersAccountRepository;
 import ng.farmsPot.data.repositories.FarmersRepository;
 import ng.farmsPot.dtos.requests.LoginFarmerRequest;
@@ -12,8 +13,8 @@ import ng.farmsPot.dtos.requests.UpdateFarmerProfileRequest;
 import ng.farmsPot.dtos.responses.LoginFarmerResponses;
 import ng.farmsPot.dtos.responses.LogoutFarmerResponse;
 import ng.farmsPot.dtos.responses.RegisterFarmerResponses;
-
 import ng.farmsPot.dtos.responses.UpdateFarmerProfileResponse;
+
 import ng.farmsPot.utils.ProfileMapper;
 import ng.farmsPot.utils.RegistrationMapper;
 import org.slf4j.Logger;
@@ -33,12 +34,14 @@ public class FarmerRegistrationServiceImpl implements FarmerRegistrationServices
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private final EmailService emailService;
     private final FarmersAccountRepository farmersAccountRepository;
+    private final TokenService tokenService;
     private static final Logger logger = LoggerFactory.getLogger(FarmerRegistrationServiceImpl.class);
 
-    public FarmerRegistrationServiceImpl(FarmersRepository farmersRepository, EmailService emailService, FarmersAccountRepository farmersAccountRepository) {
+    public FarmerRegistrationServiceImpl(FarmersRepository farmersRepository, EmailService emailService, FarmersAccountRepository farmersAccountRepository, TokenService tokenService) {
         this.farmersRepository = farmersRepository;
         this.emailService = emailService;
         this.farmersAccountRepository = farmersAccountRepository;
+        this.tokenService = tokenService;
     }
     @Transactional
     @Override
@@ -88,10 +91,18 @@ public class FarmerRegistrationServiceImpl implements FarmerRegistrationServices
             throw new IllegalArgumentException("Incorrect UserName or Password....");
         }
 
+        if (Boolean.TRUE.equals(farmer.getSuspended())) {
+            throw new IllegalArgumentException("This account has been suspended. Please contact FarmsPot support.");
+        }
+
+        Role role = farmer.getRole() == null ? Role.FARMER : farmer.getRole();
+
         LoginFarmerResponses responses = new LoginFarmerResponses();
         responses.setUserName(request.getUserName());
         responses.setMessage("Login Successful...");
         responses.setFarmerId(farmer.getId());
+        responses.setRole(role.name());
+        responses.setToken(tokenService.createToken(farmer.getId()));
 
 
         return  responses;
@@ -109,6 +120,7 @@ public class FarmerRegistrationServiceImpl implements FarmerRegistrationServices
 
         return responses;
     }
+
     @Transactional
     @Override
     public UpdateFarmerProfileResponse updateProfile(int farmerId, UpdateFarmerProfileRequest request) {
