@@ -1,7 +1,7 @@
 package ng.farmsPot.b2b.dtos.responses;
 
 import lombok.Data;
-import ng.farmsPot.b2b.model.BuyerStatus;
+import ng.farmsPot.b2b.data.models.BuyerStatus;
 
 @Data
 public class BuyerLoginResponse {
