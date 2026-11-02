@@ -15,7 +15,14 @@ import java.time.Instant;
 import java.util.Base64;
 import java.util.Optional;
 
-
+/**
+ * Issues and checks signed login tokens (HMAC-SHA256) without any extra library.
+ * A token is "payload.signature" where the payload holds who it belongs to and an expiry time.
+ * Farmer tokens carry the farmer id; buyer tokens carry "B" plus the buyer id, so one kind
+ * can never be used where the other is expected.
+ * The role is NOT stored in the token; it is read from the database on every protected call,
+ * so suspending or demoting someone takes effect immediately.
+ */
 @Service
 public class TokenService {
 
@@ -39,15 +46,49 @@ public class TokenService {
     }
 
     public String createToken(int farmerId) {
+        return build(String.valueOf(farmerId));
+    }
+
+    public String createBuyerToken(int buyerId) {
+        return build("B" + buyerId);
+    }
+
+    /** Returns the farmer id if the token is a genuine, unexpired farmer token, otherwise empty. */
+    public Optional<Integer> verify(String token) {
+        Optional<String> subject = subject(token);
+        if (subject.isEmpty() || subject.get().startsWith("B")) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(Integer.parseInt(subject.get()));
+        } catch (NumberFormatException exception) {
+            return Optional.empty();
+        }
+    }
+
+    /** Returns the buyer id if the token is a genuine, unexpired buyer token, otherwise empty. */
+    public Optional<Integer> verifyBuyer(String token) {
+        Optional<String> subject = subject(token);
+        if (subject.isEmpty() || !subject.get().startsWith("B")) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(Integer.parseInt(subject.get().substring(1)));
+        } catch (NumberFormatException exception) {
+            return Optional.empty();
+        }
+    }
+
+    private String build(String subject) {
         long expiry = Instant.now().getEpochSecond() + lifetimeSeconds;
-        String payload = farmerId + ":" + expiry;
+        String payload = subject + ":" + expiry;
         String encodedPayload = Base64.getUrlEncoder().withoutPadding()
                 .encodeToString(payload.getBytes(StandardCharsets.UTF_8));
         return encodedPayload + "." + sign(encodedPayload);
     }
 
-
-    public Optional<Integer> verify(String token) {
+    /** The verified, unexpired subject of a token, or empty. */
+    private Optional<String> subject(String token) {
         if (token == null) {
             return Optional.empty();
         }
@@ -73,7 +114,7 @@ public class TokenService {
             if (Instant.now().getEpochSecond() > expiry) {
                 return Optional.empty();
             }
-            return Optional.of(Integer.parseInt(parts[0]));
+            return Optional.of(parts[0]);
         } catch (IllegalArgumentException exception) {
             return Optional.empty();
         }
