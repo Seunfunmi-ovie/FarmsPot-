@@ -1,13 +1,13 @@
 package ng.farmsPot.b2b.controllers;
 
-import ng.farmsPot.b2b.dto.B2bStatsResponse;
-import ng.farmsPot.b2b.dto.BuyerResponse;
-import ng.farmsPot.b2b.dto.DecisionRequest;
-import ng.farmsPot.b2b.dto.ListingResponse;
-import ng.farmsPot.b2b.dto.OrderResponse;
-import ng.farmsPot.b2b.service.B2bAdminService;
-import ng.farmsPot.b2b.service.ExportOrderService;
-import ng.farmsPot.b2b.service.ListingService;
+import ng.farmsPot.b2b.dtos.responses.B2bStatsResponse;
+import ng.farmsPot.b2b.dtos.responses.BuyerResponse;
+import ng.farmsPot.b2b.dtos.requests.DecisionRequest;
+import ng.farmsPot.b2b.dtos.responses.ListingResponse;
+import ng.farmsPot.b2b.dtos.responses.OrderResponse;
+import ng.farmsPot.b2b.services.B2bAdminService;
+import ng.farmsPot.b2b.services.ExportOrderService;
+import ng.farmsPot.b2b.services.ListingService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;

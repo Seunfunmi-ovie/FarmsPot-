@@ -1,12 +1,12 @@
 package ng.farmsPot.b2b.controllers;
 
 import jakarta.validation.Valid;
-import ng.farmsPot.b2b.dto.CreateListingRequest;
-import ng.farmsPot.b2b.dto.ListingResponse;
-import ng.farmsPot.b2b.dto.NoteRequest;
-import ng.farmsPot.b2b.dto.OrderResponse;
-import ng.farmsPot.b2b.service.ExportOrderService;
-import ng.farmsPot.b2b.service.ListingService;
+import ng.farmsPot.b2b.dtos.requests.CreateListingRequest;
+import ng.farmsPot.b2b.dtos.responses.ListingResponse;
+import ng.farmsPot.b2b.dtos.requests.NoteRequest;
+import ng.farmsPot.b2b.dtos.responses.OrderResponse;
+import ng.farmsPot.b2b.services.ExportOrderService;
+import ng.farmsPot.b2b.services.ListingService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
