@@ -9,12 +9,17 @@ public class CorsConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/api/**")
-                .allowedOrigins(
-                        "http://localhost:5173",
-                        "https://farmspot-frontend.onrender.com"
+        registry.addMapping("/**")
+                .allowedOriginPatterns(
+                        "http://localhost:[*]",
+                        "http://127.0.0.1:[*]",
+                        "https://farmspot-frontend.onrender.com",
+                        "https://*.onrender.com"
                 )
-                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                .allowedHeaders("*");
+                .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD")
+                .allowedHeaders("*")
+                .exposedHeaders("Authorization", "Content-Disposition")
+                .allowCredentials(true)
+                .maxAge(3600);
     }
 }

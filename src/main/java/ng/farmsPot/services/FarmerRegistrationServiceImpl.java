@@ -54,6 +54,12 @@ public class FarmerRegistrationServiceImpl implements FarmerRegistrationServices
         if (existingFarmer1.isPresent()) {
             throw new IllegalArgumentException("Username already in use");
         }
+        if (registerFarmerRequest.getEmail() != null && !registerFarmerRequest.getEmail().isBlank()) {
+            Optional<Farmer> existingEmail = farmersRepository.findByEmail(registerFarmerRequest.getEmail().trim().toLowerCase());
+            if (existingEmail.isPresent()) {
+                throw new IllegalArgumentException("Email already in use");
+            }
+        }
         Farmer farmer = new Farmer();
         FarmersAccount farmersAccount = new FarmersAccount();
         String encodedPassword = passwordEncoder.encode(registerFarmerRequest.getPassword());
@@ -68,27 +74,35 @@ public class FarmerRegistrationServiceImpl implements FarmerRegistrationServices
             logger.warn("Failed to send registration confirmation email to {}", farmer.getEmail(), exception);
         }
 
-
         RegisterFarmerResponses responses = new RegisterFarmerResponses();
         responses.setFullName(registerFarmerRequest.getFullName());
         responses.setMessage("Registration Successful...");
 
-
-
         return  responses;
-
     }
-
 
     @Override
     public LoginFarmerResponses loginFarmer(LoginFarmerRequest request) {
-        Optional<Farmer> existingFarmer = farmersRepository.findByUserName(request.getUserName());
+        String identifier = request.getUserName() == null ? "" : request.getUserName().trim();
+        if (identifier.isBlank() || request.getPassword() == null || request.getPassword().isBlank()) {
+            throw new IllegalArgumentException("Username and password are required.");
+        }
+
+        // Allow logging in via username, phone number, or email
+        Optional<Farmer> existingFarmer = farmersRepository.findByUserName(identifier);
         if (existingFarmer.isEmpty()) {
-            throw new IllegalArgumentException("Incorrect UserName or Password....");
+            existingFarmer = farmersRepository.findByPhoneNumber(identifier);
+        }
+        if (existingFarmer.isEmpty() && identifier.contains("@")) {
+            existingFarmer = farmersRepository.findByEmail(identifier.toLowerCase());
+        }
+
+        if (existingFarmer.isEmpty()) {
+            throw new IllegalArgumentException("Incorrect username or password.");
         }
         Farmer farmer = existingFarmer.get();
-        if(!passwordEncoder.matches(request.getPassword(), farmer.getPassword())) {
-            throw new IllegalArgumentException("Incorrect UserName or Password....");
+        if (!passwordEncoder.matches(request.getPassword(), farmer.getPassword())) {
+            throw new IllegalArgumentException("Incorrect username or password.");
         }
 
         if (Boolean.TRUE.equals(farmer.getSuspended())) {
@@ -98,16 +112,13 @@ public class FarmerRegistrationServiceImpl implements FarmerRegistrationServices
         Role role = farmer.getRole() == null ? Role.FARMER : farmer.getRole();
 
         LoginFarmerResponses responses = new LoginFarmerResponses();
-        responses.setUserName(request.getUserName());
+        responses.setUserName(farmer.getUserName());
         responses.setMessage("Login Successful...");
         responses.setFarmerId(farmer.getId());
         responses.setRole(role.name());
         responses.setToken(tokenService.createToken(farmer.getId()));
 
-
-        return  responses;
-
-
+        return responses;
     }
 
 

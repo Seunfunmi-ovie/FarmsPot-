@@ -43,6 +43,9 @@ public class LoanServiceImpl implements LoanService {
 
     @Override
     public LoanApplicationResponse applyLoan(LoanApplicationRequest request) {
+        if (request.getRequestedAmount() <= 0) {
+            throw new IllegalArgumentException("Requested loan amount must be greater than zero");
+        }
         Optional<Farmer> farmerOptional = farmersRepository.findById(request.getFarmerId());
         if (farmerOptional.isEmpty()) {
             throw new IllegalArgumentException("No Farmer found with id " + request.getFarmerId());
@@ -167,6 +170,9 @@ public class LoanServiceImpl implements LoanService {
     @Transactional
     @Override
     public LoanApplicationResponse recordEscrowPayment(int loanId, double amount) {
+        if (amount <= 0) {
+            throw new IllegalArgumentException("Payment amount must be greater than zero");
+        }
 
         Optional<Loan> loanOptional = loanRepository.findById(loanId);
         if (loanOptional.isEmpty()) {
@@ -213,6 +219,13 @@ public class LoanServiceImpl implements LoanService {
 
         FarmersAccount farmersAccount1 = farmersAccountRepository.save(farmersAccount);
 
+        try {
+            double remaining = savedLoan.getRequestedAmount() - savedLoan.getAmountRepaidViaEscrow();
+            emailService.loanPaymentReceivedEmail(savedLoan.getFarmer().getEmail(), savedLoan.getFarmer().getFullName(), appliedAmount, Math.max(0, remaining));
+        } catch (Exception exception) {
+            logger.warn("Failed to send loan payment received email to {}", savedLoan.getFarmer().getEmail(), exception);
+        }
+
         LoanApplicationResponse response = new LoanApplicationResponse();
         LoanMapper.escrowPaymentResponseMapper(response, savedLoan, appliedAmount);
 
@@ -223,6 +236,9 @@ public class LoanServiceImpl implements LoanService {
 
 
     private long getDaysSinceDisbursement(Loan loan) {
+        if (loan.getDisbursementDate() == null) {
+            return 0;
+        }
         return ChronoUnit.DAYS.between(loan.getDisbursementDate(), LocalDateTime.now());
     }
 
@@ -230,6 +246,9 @@ public class LoanServiceImpl implements LoanService {
     public void checkLoanDefaults() {
         List<Loan> checkLoan = loanRepository.findByStatus(LoanStatus.APPROVED);
         for (Loan loan : checkLoan) {
+            if (loan.getDisbursementDate() == null) {
+                continue;
+            }
             long daysPassed = getDaysSinceDisbursement(loan);
             if (daysPassed == 31) {
                 emailService.loanDueWarningEmail(loan.getFarmer().getEmail(), loan.getFarmer().getFullName());
@@ -245,6 +264,9 @@ public class LoanServiceImpl implements LoanService {
 
         List<Loan> checkLoan1 = loanRepository.findByStatus(LoanStatus.REPAYING);
         for (Loan loan1 : checkLoan1) {
+            if (loan1.getDisbursementDate() == null) {
+                continue;
+            }
             long unfinishedPayment = getDaysSinceDisbursement(loan1);
             if (unfinishedPayment == 31) {
                 emailService.loanDueWarningEmail(loan1.getFarmer().getEmail(), loan1.getFarmer().getFullName());

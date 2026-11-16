@@ -66,7 +66,7 @@ public class TokenService {
         }
     }
 
-    /** Returns the buyer id if the token is a genuine, unexpired buyer token, otherwise empty. */
+    // Returns the buyer id if the token is a genuine, unexpired buyer token, otherwise empty.
     public Optional<Integer> verifyBuyer(String token) {
         Optional<String> subject = subject(token);
         if (subject.isEmpty() || !subject.get().startsWith("B")) {
@@ -87,7 +87,7 @@ public class TokenService {
         return encodedPayload + "." + sign(encodedPayload);
     }
 
-    /** The verified, unexpired subject of a token, or empty. */
+    // The verified, unexpired subject of a token, or empty.
     private Optional<String> subject(String token) {
         if (token == null) {
             return Optional.empty();

@@ -34,8 +34,14 @@ public class WebConfig implements WebMvcConfigurer {
                         "/api/loans/recordEscrowPayment/**",
                         "/api/b2b/farmer/**");
 
-        // Everything a buyer does after signing in. Buyer register and login stay open.
+        // Everything a buyer does after signing in. Buyer register, login, and public marketplace listings stay open.
         registry.addInterceptor(buyerAuthInterceptor)
-                .addPathPatterns("/api/b2b/buyer/**");
+                .addPathPatterns("/api/b2b/buyer/**")
+                .excludePathPatterns(
+                        "/api/b2b/buyer/login",
+                        "/api/b2b/buyer/register",
+                        "/api/b2b/buyer/listings",
+                        "/api/b2b/buyer/listings/**"
+                );
     }
 }

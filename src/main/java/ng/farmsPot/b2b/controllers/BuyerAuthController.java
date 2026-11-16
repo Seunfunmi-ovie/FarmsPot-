@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /** Open endpoints: a company registers, then signs in once an admin has verified it. */
 @RestController
-@RequestMapping("/api/b2b/buyers")
+@RequestMapping({"/api/b2b/buyers", "/api/b2b/buyer"})
 public class BuyerAuthController {
 
     private final BuyerService buyerService;
